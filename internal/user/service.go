@@ -8,10 +8,10 @@ import (
 )
 
 type IUserService interface {
-	CreateUser(string, string, string) (db.User, error)
-	LoginUser(string, string) (db.User, error)
-	hashPassword(string) (string, error)
-	checkPassword(string, string) error
+	CreateUser(username string, password string, email string) (db.User, error)
+	LoginUser(email string, password string) (db.User, error)
+	hashPassword(password string) (string, error)
+	checkPassword(password string, hashedPassword string) error
 }
 
 type UserService struct {
