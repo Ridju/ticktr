@@ -1,34 +1,36 @@
 package user
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/Ridju/ticktr/config"
+	"github.com/Ridju/ticktr/internal/token"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type UserRouter struct {
-	repo IUserRepository
-	us   IUserService
+type userRouter struct {
+	repo   IUserRepository
+	us     IUserService
+	tm     token.Maker
+	config config.Config
 }
 
-func NewUserRouter(repo IUserRepository, us IUserService) UserRouter {
-	return UserRouter{
-		repo: repo,
-		us:   us,
+func InitUserRouter(r *gin.RouterGroup, db *gorm.DB, config config.Config, tokenMaker token.Maker) {
+	userRepo := NewGORMRepository(db)
+	userService := NewUserService(userRepo)
+
+	userRouter := userRouter{
+		repo:   userRepo,
+		us:     userService,
+		config: config,
+		tm:     tokenMaker,
 	}
-}
 
-func (ur *UserRouter) InitUserHandler(path string, r *gin.RouterGroup) {
-	r.POST(fmt.Sprintf("%s%s", path, ""), ur.createUser)
-	r.POST(fmt.Sprintf("%s%s", path, "/login"), ur.loginUser)
-}
+	r.POST("", userRouter.createUser)
+	r.POST("/login", userRouter.loginUser)
 
-/* type UserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,min=6"`
-	Email    string `json:"email" binding:"required,email"`
-} */
+}
 
 type UserResponse struct {
 	ID       uint   `json:"id"`
@@ -36,7 +38,7 @@ type UserResponse struct {
 	Email    string `json:"email"`
 }
 
-func (ur *UserRouter) createUser(ctx *gin.Context) {
+func (ur *userRouter) createUser(ctx *gin.Context) {
 	req := struct {
 		Username string `json:"username" binding:"required,alphanum"`
 		Password string `json:"password" binding:"required,min=6"`
@@ -61,18 +63,7 @@ func (ur *UserRouter) createUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-/*
-type loginUserRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-} */
-
-/* type LoginUserResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        UserResponse `json:"user"`
-} */
-
-func (ur *UserRouter) loginUser(ctx *gin.Context) {
+func (ur *userRouter) loginUser(ctx *gin.Context) {
 	req := struct {
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required,min=6"`
@@ -88,17 +79,12 @@ func (ur *UserRouter) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	/* 	accessToken, err := uh.tokenMaker.CreateToken(user.ID, uh.config.AccessTokenDuration)
-	   	if err != nil {
-	   		retErr := ownError.NewHttpError(
-	   			"Could not create Token",
-	   			"There are some internal errors",
-	   			http.StatusInternalServerError,
-	   		)
-	   		ctx.Error(retErr)
-	   		return
-	   	}
-	*/
+	accessToken, err := ur.tm.CreateToken(user.ID, ur.config.AccessTokenDuration)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
 	rsp := struct {
 		AccessToken string       `json:"access_token"`
 		User        UserResponse `json:"user"`
