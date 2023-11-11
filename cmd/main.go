@@ -30,5 +30,8 @@ func main() {
 	}
 
 	r := gin.Default()
+
 	user.InitUserRouter(r.Group("/user"), gormDB, config, tokenMaker)
+
+	r.Run(config.ServerAddress)
 }

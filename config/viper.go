@@ -10,6 +10,7 @@ type Config struct {
 	DBSource            string        `mapstructure:"DB_SOURCE"`
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	AccessTokenKey      string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

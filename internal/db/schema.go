@@ -2,12 +2,10 @@ package db
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
+	ID       uint   `json:"id" gorm:"primary_key"`
 	Username string `json:"user_name"`
 	Password string `json:"-"`
 	Email    string `json:"email"`
@@ -15,10 +13,10 @@ type User struct {
 }
 
 type Ticket struct {
-	gorm.Model
+	ID          uint   `json:"id" gorm:"primary_key"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	UserID      int
-	CreatedBy   User      `gorm:"embedded:username"`
-	DueDate     time.Time `json:"due_date"`
+	/* 	UserID      int */
+	/* 	CreatedBy   User      `gorm:"embedded:username"` */
+	DueDate time.Time `json:"due_date"`
 }
