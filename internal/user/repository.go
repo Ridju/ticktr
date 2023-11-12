@@ -1,58 +1,62 @@
 package user
 
 import (
-	"github.com/Ridju/ticktr/internal/db"
-	"gorm.io/gorm"
+	"context"
+
+	db "github.com/Ridju/ticktr/internal/db/sqlc"
 )
 
 type IUserRepository interface {
-	CreateUser(string, string, string) (db.User, error)
-	GetUserByMail(string) (db.User, error)
-	GetUserByID(int) (db.User, error)
+	CreateUser(CreateUserArgs, context.Context) (db.User, error)
+	GetUserByMail(string, context.Context) (db.User, error)
+	GetUserByID(int64, context.Context) (db.User, error)
 }
 
-type GORMRepository struct {
-	db *gorm.DB
+type UserRepository struct {
+	Store db.Store
 }
 
-func NewGORMRepository(db *gorm.DB) IUserRepository {
-	return &GORMRepository{
-		db: db,
+func NewUserRepository(store db.Store) IUserRepository {
+	return &UserRepository{
+		Store: store,
 	}
 }
 
-func (r *GORMRepository) CreateUser(username string, password string, email string) (db.User, error) {
-
-	user := db.User{
-		Username: username,
-		Password: password,
-		Email:    email,
-	}
-
-	result := r.db.Create(&user)
-	if result.Error != nil {
-		return db.User{}, result.Error
-	}
-
-	return user, nil
+type CreateUserArgs struct {
+	Username string
+	Password string
+	Email    string
 }
 
-func (r *GORMRepository) GetUserByMail(email string) (db.User, error) {
-	var user db.User
-	result := r.db.First(&user, "email = ?", email)
-	if result.Error != nil {
-		return db.User{}, result.Error
+func (r *UserRepository) CreateUser(args CreateUserArgs, ctx context.Context) (db.User, error) {
+	arg := db.CreateUserParams{
+		Username: args.Username,
+		Password: args.Password,
+		Email:    args.Email,
+	}
+
+	user, err := r.Store.CreateUser(ctx, arg)
+	if err != nil {
+		return db.User{}, err
 	}
 
 	return user, nil
 }
 
-func (r *GORMRepository) GetUserByID(ID int) (db.User, error) {
-	var user db.User
-	result := r.db.First(&user, "id = ?", ID)
-	if result.Error != nil {
-		return db.User{}, result.Error
+func (r *UserRepository) GetUserByMail(email string, ctx context.Context) (db.User, error) {
+	user, err := r.Store.GetUserByEmail(ctx, email)
+
+	if err != nil {
+		return db.User{}, err
 	}
 
+	return user, nil
+}
+
+func (r *UserRepository) GetUserByID(ID int64, ctx context.Context) (db.User, error) {
+	user, err := r.Store.GetUserByID(ctx, ID)
+	if err != nil {
+		return db.User{}, err
+	}
 	return user, nil
 }
