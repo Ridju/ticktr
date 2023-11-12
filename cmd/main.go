@@ -1,13 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/Ridju/ticktr/config"
-	"github.com/Ridju/ticktr/internal/db"
+	db "github.com/Ridju/ticktr/internal/db/sqlc"
 	"github.com/Ridju/ticktr/internal/token"
 	"github.com/Ridju/ticktr/internal/user"
 	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -17,7 +19,12 @@ func main() {
 		return
 	}
 
-	gormDB, err := db.Init(config.DBSource)
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	if err != nil {
+		log.Fatal("Cannot connect to DB:", err)
+	}
+
+	store := db.NewStore(conn)
 	if err != nil {
 		log.Fatal("Could not connect to DB!", err)
 		return
@@ -31,7 +38,7 @@ func main() {
 
 	r := gin.Default()
 
-	user.InitUserRouter(r.Group("/user"), gormDB, config, tokenMaker)
+	user.InitUserRouter(r.Group("/user"), store, config, tokenMaker)
 
 	r.Run(config.ServerAddress)
 }

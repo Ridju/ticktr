@@ -11,6 +11,7 @@ type Config struct {
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	AccessTokenKey      string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
+	DBDriver            string        `mapstructure:"DB_DRIVER"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

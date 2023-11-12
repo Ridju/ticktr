@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/Ridju/ticktr/config"
+	db "github.com/Ridju/ticktr/internal/db/sqlc"
 	"github.com/Ridju/ticktr/internal/token"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type userRouter struct {
@@ -16,8 +16,8 @@ type userRouter struct {
 	config config.Config
 }
 
-func InitUserRouter(r *gin.RouterGroup, db *gorm.DB, config config.Config, tokenMaker token.Maker) {
-	userRepo := NewGORMRepository(db)
+func InitUserRouter(r *gin.RouterGroup, store db.Store, config config.Config, tokenMaker token.Maker) {
+	userRepo := NewUserRepository(store)
 	userService := NewUserService(userRepo)
 
 	userRouter := userRouter{
@@ -33,7 +33,7 @@ func InitUserRouter(r *gin.RouterGroup, db *gorm.DB, config config.Config, token
 }
 
 type UserResponse struct {
-	ID       uint   `json:"id"`
+	ID       int64  `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 }
@@ -49,7 +49,7 @@ func (ur *userRouter) createUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := ur.us.CreateUser(req.Username, req.Password, req.Email)
+	user, err := ur.us.CreateUser(req.Username, req.Password, req.Email, ctx)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -73,7 +73,7 @@ func (ur *userRouter) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := ur.us.LoginUser(req.Email, req.Password)
+	user, err := ur.us.LoginUser(req.Email, req.Password, ctx)
 	if err != nil {
 		ctx.Error(err)
 		return

@@ -1,13 +1,6 @@
 package ticket
 
-import (
-	"time"
-
-	"github.com/Ridju/ticktr/internal/db"
-	"gorm.io/gorm"
-)
-
-type ITicketRepository interface {
+/* type ITicketRepository interface {
 	CreateTicket(title string, description string, due_date time.Time) (db.Ticket, error)
 	UpdateTicket(title string, description string, due_date time.Time) (db.Ticket, error)
 	GetTickets(offset int, page_size int) ([]db.Ticket, error)
@@ -55,5 +48,10 @@ func (r *GORMTicketRepository) UpdateTicket(ID uint, title string, description s
 
 	return ticket, nil
 }
-func (r *GORMTicketRepository) GetTickets(offset int, page_size int) ([]db.Ticket, error) {}
+
+func (r *GORMTicketRepository) GetTickets(offset int, page_size int) ([]db.Ticket, error) {
+
+}
+
 func (r *GORMTicketRepository) DeleteTicket(ID uint) (db.Ticket, error)                   {}
+*/

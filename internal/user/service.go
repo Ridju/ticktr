@@ -1,15 +1,16 @@
 package user
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/Ridju/ticktr/internal/db"
+	db "github.com/Ridju/ticktr/internal/db/sqlc"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type IUserService interface {
-	CreateUser(username string, password string, email string) (db.User, error)
-	LoginUser(email string, password string) (db.User, error)
+	CreateUser(username string, password string, email string, ctx context.Context) (db.User, error)
+	LoginUser(email string, password string, ctx context.Context) (db.User, error)
 	hashPassword(password string) (string, error)
 	checkPassword(password string, hashedPassword string) error
 }
@@ -36,21 +37,27 @@ func (us *UserService) checkPassword(password string, hashedPassword string) err
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-func (us *UserService) CreateUser(username string, password string, email string) (db.User, error) {
+func (us *UserService) CreateUser(username string, password string, email string, ctx context.Context) (db.User, error) {
 	hashedPW, err := us.hashPassword(password)
 	if err != nil {
 		return db.User{}, err
 	}
 
-	user, err := us.repo.CreateUser(username, hashedPW, email)
+	args := CreateUserArgs{
+		Username: username,
+		Password: hashedPW,
+		Email:    email,
+	}
+
+	user, err := us.repo.CreateUser(args, ctx)
 	if err != nil {
 		return db.User{}, err
 	}
 	return user, nil
 }
 
-func (us *UserService) LoginUser(email string, password string) (db.User, error) {
-	user, err := us.repo.GetUserByMail(email)
+func (us *UserService) LoginUser(email string, password string, ctx context.Context) (db.User, error) {
+	user, err := us.repo.GetUserByMail(email, ctx)
 	if err != nil {
 		return db.User{}, err
 	}
