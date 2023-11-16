@@ -1,57 +1,96 @@
 package ticket
 
-/* type ITicketRepository interface {
-	CreateTicket(title string, description string, due_date time.Time) (db.Ticket, error)
-	UpdateTicket(title string, description string, due_date time.Time) (db.Ticket, error)
-	GetTickets(offset int, page_size int) ([]db.Ticket, error)
-	DeleteTicket(ID uint) (db.Ticket, error)
+import (
+	"context"
+	"time"
+
+	db "github.com/Ridju/ticktr/internal/db/sqlc"
+)
+
+type ITicketRepository interface {
+	CreateTicket(args CreateTicketArgs, ctx context.Context) (db.Ticket, error)
+	UpdateTicket(args UpdateTicketArgs, ctx context.Context) (db.Ticket, error)
+	GetTickets(offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error)
+	DeleteTicket(ID int64, ctx context.Context) error
 }
 
-type GORMTicketRepository struct {
-	db *gorm.DB
+type TicketRepository struct {
+	store db.Store
 }
 
-func CreateNewGORMTicketRepository(db *gorm.DB) ITicketRepository {
-	return &GORMTicketRepository{
-		db: db,
+func NewTicketRepository(store db.Store) ITicketRepository {
+	return &TicketRepository{
+		store: store,
 	}
 }
 
-func (r *GORMTicketRepository) CreateTicket(title string, description string, due_date time.Time) (db.Ticket, error) {
-	ticket := db.Ticket{
-		Title:       title,
-		Description: description,
-		DueDate:     due_date,
-	}
-
-	result := r.db.Create(&ticket)
-	if result.Error != nil {
-		return db.Ticket{}, result.Error
-	}
-
-	return ticket, nil
+type CreateTicketArgs struct {
+	Title       string
+	Description string
+	Due_date    time.Time
+	Assigned_to db.User
+	Created_by  db.User
 }
 
-func (r *GORMTicketRepository) UpdateTicket(ID uint, title string, description string, assigned_to uint, due_date time.Time) (db.Ticket, error) {
-
-	ticket := db.Ticket{
-		ID:          ID,
-		Title:       title,
-		Description: description,
-		DueDate:     due_date,
+func (r *TicketRepository) CreateTicket(args CreateTicketArgs, ctx context.Context) (db.Ticket, error) {
+	arg := db.CreateTicketParams{
+		Title:       args.Title,
+		Description: args.Description,
+		AssignedTo:  args.Assigned_to.ID,
+		CreatedBy:   args.Created_by.ID,
+		DueDate:     args.Due_date,
 	}
 
-	result := r.db.Model(&ticket).Updates(&ticket)
-	if result.Error != nil {
-		return db.Ticket{}, result.Error
+	ticket, err := r.store.CreateTicket(ctx, arg)
+	if err != nil {
+		return db.Ticket{}, nil
 	}
 
-	return ticket, nil
+	return ticket, err
 }
 
-func (r *GORMTicketRepository) GetTickets(offset int, page_size int) ([]db.Ticket, error) {
-
+type UpdateTicketArgs struct {
+	ID          int64
+	Title       string
+	Description string
+	Assigned_to db.User
+	CreatedBy   db.User
+	DueDate     time.Time
 }
 
-func (r *GORMTicketRepository) DeleteTicket(ID uint) (db.Ticket, error)                   {}
-*/
+func (r *TicketRepository) UpdateTicket(args UpdateTicketArgs, ctx context.Context) (db.Ticket, error) {
+	arg := db.UpdateTicketParams{
+		ID:          args.ID,
+		Title:       args.Title,
+		Description: args.Description,
+		AssignedTo:  args.Assigned_to.ID,
+		CreatedBy:   args.CreatedBy.ID,
+		DueDate:     args.DueDate,
+	}
+
+	ticket, err := r.store.UpdateTicket(ctx, arg)
+	if err != nil {
+		return db.Ticket{}, nil
+	}
+	return ticket, err
+}
+
+func (r *TicketRepository) GetTickets(offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error) {
+	arg := db.ListTicketsParams{
+		Limit:  page_size,
+		Offset: (offset - 1) * page_size,
+	}
+	tickets, err := r.store.ListTickets(ctx, arg)
+	if err != nil {
+		return []db.Ticket{}, nil
+	}
+
+	return tickets, err
+}
+
+func (r *TicketRepository) DeleteTicket(ID int64, ctx context.Context) error {
+	if err := r.store.DeleteTicket(ctx, ID); err != nil {
+		return err
+	}
+	return nil
+}
