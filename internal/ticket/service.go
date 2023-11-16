@@ -18,7 +18,7 @@ type TicketService struct {
 }
 
 func NewTicketService(repo ITicketRepository) ITicketRepository {
-	return &TicketRepository{
+	return &TicketService{
 		repo: repo,
 	}
 }
