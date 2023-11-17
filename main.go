@@ -6,6 +6,8 @@ import (
 
 	"github.com/Ridju/ticktr/config"
 	db "github.com/Ridju/ticktr/internal/db/sqlc"
+	"github.com/Ridju/ticktr/internal/middleware"
+	"github.com/Ridju/ticktr/internal/ticket"
 	"github.com/Ridju/ticktr/internal/token"
 	"github.com/Ridju/ticktr/internal/user"
 	"github.com/gin-gonic/gin"
@@ -39,6 +41,9 @@ func main() {
 	r := gin.Default()
 
 	user.InitUserRouter(r.Group("/user"), store, config, tokenMaker)
+
+	authRoutes := r.Group("/api").Use(middleware.AuthMiddleware(tokenMaker))
+	ticket.InitTicketRouter(authRoutes, store, config)
 
 	r.Run(config.ServerAddress)
 }

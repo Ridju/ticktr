@@ -10,7 +10,10 @@ import (
 type ITicketRepository interface {
 	CreateTicket(args CreateTicketArgs, ctx context.Context) (db.Ticket, error)
 	UpdateTicket(args UpdateTicketArgs, ctx context.Context) (db.Ticket, error)
-	GetTickets(offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error)
+	GetTicket(ID int64, ctx context.Context) (db.Ticket, error)
+	ListTickets(offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error)
+	ListTicketsForUser(UserID int64, offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error)
+	ListTicketsByUser(UserID int64, offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error)
 	DeleteTicket(ID int64, ctx context.Context) error
 }
 
@@ -28,16 +31,24 @@ type CreateTicketArgs struct {
 	Title       string
 	Description string
 	Due_date    time.Time
-	Assigned_to db.User
-	Created_by  db.User
+	Assigned_to int64
+	Created_by  int64
+}
+
+func (r *TicketRepository) GetTicket(ID int64, ctx context.Context) (db.Ticket, error) {
+	ticket, err := r.store.GetTicketByID(ctx, ID)
+	if err != nil {
+		return db.Ticket{}, nil
+	}
+	return ticket, err
 }
 
 func (r *TicketRepository) CreateTicket(args CreateTicketArgs, ctx context.Context) (db.Ticket, error) {
 	arg := db.CreateTicketParams{
 		Title:       args.Title,
 		Description: args.Description,
-		AssignedTo:  args.Assigned_to.ID,
-		CreatedBy:   args.Created_by.ID,
+		AssignedTo:  args.Assigned_to,
+		CreatedBy:   args.Created_by,
 		DueDate:     args.Due_date,
 	}
 
@@ -50,12 +61,12 @@ func (r *TicketRepository) CreateTicket(args CreateTicketArgs, ctx context.Conte
 }
 
 type UpdateTicketArgs struct {
-	ID          int64
-	Title       string
-	Description string
-	Assigned_to db.User
-	CreatedBy   db.User
-	DueDate     time.Time
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Assigned_to int64     `json:"assigned_to"`
+	CreatedBy   int64     `json:"created_by"`
+	DueDate     time.Time `json:"due_date"`
 }
 
 func (r *TicketRepository) UpdateTicket(args UpdateTicketArgs, ctx context.Context) (db.Ticket, error) {
@@ -63,8 +74,8 @@ func (r *TicketRepository) UpdateTicket(args UpdateTicketArgs, ctx context.Conte
 		ID:          args.ID,
 		Title:       args.Title,
 		Description: args.Description,
-		AssignedTo:  args.Assigned_to.ID,
-		CreatedBy:   args.CreatedBy.ID,
+		AssignedTo:  args.ID,
+		CreatedBy:   args.ID,
 		DueDate:     args.DueDate,
 	}
 
@@ -93,4 +104,45 @@ func (r *TicketRepository) DeleteTicket(ID int64, ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (r *TicketRepository) ListTicketsForUser(UserID int64, offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error) {
+	arg := db.ListTicketsForUserParams{
+		AssignedTo: UserID,
+		Limit:      page_size,
+		Offset:     offset,
+	}
+	tickets, err := r.store.ListTicketsForUser(ctx, arg)
+	if err != nil {
+		return []db.Ticket{}, err
+	}
+
+	return tickets, err
+}
+
+func (r *TicketRepository) ListTicketsByUser(UserID int64, offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error) {
+	arg := db.ListTicketsByUserParams{
+		CreatedBy: UserID,
+		Limit:     page_size,
+		Offset:    offset,
+	}
+	tickets, err := r.store.ListTicketsByUser(ctx, arg)
+	if err != nil {
+		return []db.Ticket{}, err
+	}
+
+	return tickets, err
+}
+
+func (r *TicketRepository) ListTickets(offset int32, page_size int32, ctx context.Context) ([]db.Ticket, error) {
+	arg := db.ListTicketsParams{
+		Limit:  page_size,
+		Offset: offset,
+	}
+	tickets, err := r.store.ListTickets(ctx, arg)
+	if err != nil {
+		return []db.Ticket{}, nil
+	}
+
+	return tickets, err
 }
